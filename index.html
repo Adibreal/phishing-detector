@@ -1,148 +1,213 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phishing Detector</title>
-<style>
-body{
-margin:0;font-family:Arial,sans-serif;background:#050816;color:white;
-background-image:radial-gradient(circle at top, rgba(0,200,255,.2), transparent 35%);
-}
-.container{max-width:1000px;margin:auto;padding:30px}
-.card{background:rgba(255,255,255,.05);border:1px solid rgba(0,200,255,.3);
-border-radius:20px;padding:25px;backdrop-filter:blur(8px)}
-h1{font-size:3rem;margin:0 0 10px}
-textarea,input{width:100%;padding:15px;border-radius:12px;border:1px solid #00cfff;
-background:#08111f;color:white;box-sizing:border-box}
-button{padding:12px 20px;margin:10px 5px;border:none;border-radius:12px;
-background:#00cfff;color:black;font-weight:bold;cursor:pointer}
-.bar{height:18px;background:#111;border-radius:20px;overflow:hidden}
-.fill{height:100%;width:0%;background:linear-gradient(90deg,#00cfff,#0077ff)}
-#reasons li{margin:8px 0}
-</style>
-</head>
-<body>
-<div class="container">
-<div class="card">
-<h1>Phishing Detector</h1>
-<p>Scan suspicious URLs or messages.</p>
-
-<button onclick="setMode('url')">URL Scan</button>
-<button onclick="setMode('msg')">Message Scan</button>
-
-<div id="urlBox">
-<input id="urlInput" placeholder="https://example.com">
-</div>
-
-<div id="msgBox" style="display:none">
-<textarea id="msgInput" rows="8" placeholder="Paste email or message"></textarea>
-</div>
-
-<br>
-<button onclick="scan()">Analyze</button>
-
-<h2 id="risk">Risk Score: 0/100</h2>
-<div class="bar"><div class="fill" id="fill"></div></div>
-
-<h3>Reasons</h3>
-<ul id="reasons"></ul>
-</div>
-</div>
-
 <script>
-let mode='url';
+let mode = 'url';
 
 function setMode(m){
-mode=m;
-document.getElementById('urlBox').style.display=m==='url'?'block':'none';
-document.getElementById('msgBox').style.display=m==='msg'?'block':'none';
+    mode = m;
+
+    document.getElementById('urlBox').style.display =
+        m === 'url' ? 'block' : 'none';
+
+    document.getElementById('msgBox').style.display =
+        m === 'msg' ? 'block' : 'none';
 }
 
 function scan(){
-let score=0;
-let reasons=[];
 
-if(mode==='url'){
-const url=document.getElementById('urlInput').value.toLowerCase();
+    let score = 0;
+    let reasons = [];
 
-if(url.startsWith('http://')){score+=15;reasons.push('Uses HTTP instead of HTTPS');}
-if((url.match(/\./g)||[]).length>3){score+=10;reasons.push('Many subdomains');}
-const suspiciousWords = [
-  "login",
-  "verify",
-  "secure",
-  "account",
-  "signin",
-  "security",
-  "paypal",
-  "bank",
-  "microsoft",
-  "google",
-  "amazon"
-];
+    if(mode === 'url'){
 
-let wordCount = 0;
+        const url =
+            document.getElementById('urlInput')
+            .value
+            .toLowerCase()
+            .trim();
 
-suspiciousWords.forEach(word => {
-  if(url.includes(word)) wordCount++;
-});
+        try{
+            new URL(url);
+        }
+        catch{
+            score += 25;
+            reasons.push("Invalid URL format");
+        }
 
-score += wordCount * 8;reasons.push('Contains phishing lure words');}
-if(/\.zip|\.xyz|\.top|\.click/.test(url)){score+=15;reasons.push('Suspicious TLD');}
-if(url.length>40){score+=10;reasons.push('Very long URL');}
-if(reasons.length===0) reasons.push('No major red flags found');
-}
-else{
-const msg=document.getElementById('msgInput').value.toLowerCase();
+        if(url.startsWith('http://')){
+            score += 15;
+            reasons.push("Uses HTTP instead of HTTPS");
+        }
 
-const words=['urgent','verify now','account suspended','click here','password','otp','bank','security alert'];
-words.forEach(w=>{
-if(msg.includes(w)){score+=12;reasons.push('Detected: '+w);}
-});
+        if((url.match(/\./g) || []).length > 3){
+            score += 10;
+            reasons.push("Many subdomains detected");
+        }
 
-if((msg.match(/!/g)||[]).length>3){score+=8;reasons.push('Excessive urgency punctuation');}
-if(/https?:\/\//.test(msg)){score+=10;reasons.push('Contains links');}
+        const suspiciousWords = [
+            "login",
+            "signin",
+            "verify",
+            "verification",
+            "security",
+            "secure",
+            "account",
+            "bank",
+            "wallet",
+            "paypal",
+            "microsoft",
+            "google",
+            "amazon",
+            "update",
+            "billing",
+            "support",
+            "confirm"
+        ];
 
-if(reasons.length===0) reasons.push('No major phishing indicators found');
-}
-if(url.split("-").length > 3){
-    score += 10;
-    reasons.push("Multiple hyphens detected");
-}
-const brands = [
-  "paypal",
-  "google",
-  "microsoft",
-  "amazon",
-  "facebook",
-  "instagram",
-  "apple"
-];
+        let wordCount = 0;
 
-brands.forEach(brand=>{
-  if(url.includes(brand)){
-      score += 15;
-      reasons.push("Possible brand impersonation");
-  }
-});
-if(url.length > 35){
-    score += 10;
-    reasons.push("Unusually long domain");
-}
-if(score>100) score=100;
+        suspiciousWords.forEach(word => {
+            if(url.includes(word)){
+                wordCount++;
+            }
+        });
 
-document.getElementById('risk').innerText='Risk Score: '+score+'/100';
-document.getElementById('fill').style.width=score+'%';
+        if(wordCount > 0){
+            score += wordCount * 8;
+            reasons.push(
+                `${wordCount} suspicious keyword(s) detected`
+            );
+        }
 
-const ul=document.getElementById('reasons');
-ul.innerHTML='';
-reasons.forEach(r=>{
-const li=document.createElement('li');
-li.textContent=r;
-ul.appendChild(li);
-});
+        if(/\.zip|\.xyz|\.top|\.click|\.icu/.test(url)){
+            score += 15;
+            reasons.push("Suspicious TLD detected");
+        }
+
+        if(url.split("-").length > 3){
+            score += 10;
+            reasons.push("Multiple hyphens detected");
+        }
+
+        const brands = [
+            "paypal",
+            "google",
+            "microsoft",
+            "amazon",
+            "facebook",
+            "instagram",
+            "apple"
+        ];
+
+        brands.forEach(brand => {
+            if(url.includes(brand)){
+                score += 15;
+                reasons.push(
+                    `Possible ${brand} impersonation`
+                );
+            }
+        });
+
+        if(url.length > 35){
+            score += 10;
+            reasons.push("Unusually long URL");
+        }
+
+        if(reasons.length === 0){
+            reasons.push("No major red flags found");
+        }
+
+    }else{
+
+        const msg =
+            document.getElementById('msgInput')
+            .value
+            .toLowerCase();
+
+        const words = [
+            'urgent',
+            'verify now',
+            'account suspended',
+            'click here',
+            'password',
+            'otp',
+            'bank',
+            'security alert',
+            'verify account',
+            'login immediately'
+        ];
+
+        words.forEach(w => {
+            if(msg.includes(w)){
+                score += 12;
+                reasons.push(`Detected: ${w}`);
+            }
+        });
+
+        if((msg.match(/!/g) || []).length > 3){
+            score += 8;
+            reasons.push(
+                "Excessive urgency punctuation"
+            );
+        }
+
+        if(/https?:\/\//.test(msg)){
+            score += 10;
+            reasons.push(
+                "Contains clickable links"
+            );
+        }
+
+        if(reasons.length === 0){
+            reasons.push(
+                "No major phishing indicators found"
+            );
+        }
+    }
+
+    score = Math.min(score, 100);
+
+    let level = "Low Risk";
+
+    if(score >= 75){
+        level = "High Risk";
+    }
+    else if(score >= 40){
+        level = "Medium Risk";
+    }
+
+    document.getElementById('risk').innerText =
+        `Risk Score: ${score}/100 (${level})`;
+
+    const fill =
+        document.getElementById('fill');
+
+    fill.style.width = score + "%";
+
+    if(score >= 75){
+        fill.style.background =
+            "linear-gradient(90deg,#ff3b3b,#ff8a00)";
+    }
+    else if(score >= 40){
+        fill.style.background =
+            "linear-gradient(90deg,#ffd000,#ff8a00)";
+    }
+    else{
+        fill.style.background =
+            "linear-gradient(90deg,#00cfff,#0077ff)";
+    }
+
+    const ul =
+        document.getElementById('reasons');
+
+    ul.innerHTML = '';
+
+    reasons.forEach(r => {
+        const li =
+            document.createElement('li');
+
+        li.textContent = r;
+
+        ul.appendChild(li);
+    });
 }
 </script>
-</body>
-</html>
+
