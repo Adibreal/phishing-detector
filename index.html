@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Phishing Detector</title>
+<title>Phishing Detector</title>
 <style>
 body{
 margin:0;font-family:Arial,sans-serif;background:#050816;color:white;
@@ -25,7 +25,7 @@ background:#00cfff;color:black;font-weight:bold;cursor:pointer}
 <body>
 <div class="container">
 <div class="card">
-<h1>Neon Phishing Detector</h1>
+<h1>Phishing Detector</h1>
 <p>Scan suspicious URLs or messages.</p>
 
 <button onclick="setMode('url')">URL Scan</button>
@@ -68,7 +68,27 @@ const url=document.getElementById('urlInput').value.toLowerCase();
 
 if(url.startsWith('http://')){score+=15;reasons.push('Uses HTTP instead of HTTPS');}
 if((url.match(/\./g)||[]).length>3){score+=10;reasons.push('Many subdomains');}
-if(/login|verify|secure|account|signin/.test(url)){score+=15;reasons.push('Contains phishing lure words');}
+const suspiciousWords = [
+  "login",
+  "verify",
+  "secure",
+  "account",
+  "signin",
+  "security",
+  "paypal",
+  "bank",
+  "microsoft",
+  "google",
+  "amazon"
+];
+
+let wordCount = 0;
+
+suspiciousWords.forEach(word => {
+  if(url.includes(word)) wordCount++;
+});
+
+score += wordCount * 8;reasons.push('Contains phishing lure words');}
 if(/\.zip|\.xyz|\.top|\.click/.test(url)){score+=15;reasons.push('Suspicious TLD');}
 if(url.length>40){score+=10;reasons.push('Very long URL');}
 if(reasons.length===0) reasons.push('No major red flags found');
